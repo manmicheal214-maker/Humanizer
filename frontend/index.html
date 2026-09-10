@@ -3,32 +3,376 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="TextMy AI Humanizer rewrites text for clearer, more natural readability while preserving meaning.">
+  <meta name="description" content="Rewrite text for clearer, more natural readability while preserving meaning.">
   <meta property="og:title" content="TextMy AI Humanizer">
-  <meta property="og:description" content="TextMy AI Humanizer rewrites text for clearer, more natural readability while preserving meaning.">
+  <meta property="og:description" content="Rewrite text for clearer, more natural readability while preserving meaning.">
   <meta name="theme-color" content="#0f172a">
   <title>TextMy AI Humanizer</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="site-header">
+  <header id="siteHeader" class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="./" aria-label="TextMy AI Humanizer home"><span class="brand-mark">✦</span><span>TextMy <strong>AI Humanizer</strong></span></a>
-      <nav class="header-actions" aria-label="Primary"><button id="themeToggle" class="icon-button" type="button" aria-label="Switch theme" title="Switch theme">☼</button><a class="github-link" href="https://github.com/manmicheal214-maker/textmy-ai-humanizer" target="_blank" rel="noopener noreferrer">GitHub ↗</a></nav>
+      <a id="brandLink" class="brand" href="./" aria-label="TextMy AI Platform Home">
+        <span class="brand-mark">✦</span>
+        <span>TextMy <strong>AI Platform</strong></span>
+      </a>
+      <div class="header-actions">
+        <div id="usageBadge" class="usage-badge" title="Monthly character usage">
+          <span class="usage-dot"></span>
+          <span id="usageText">Quota: Free Tier</span>
+        </div>
+        <button id="themeToggle" class="icon-button" type="button" aria-label="Switch theme" title="Switch theme">☼</button>
+        <a id="githubLink" class="github-link" href="https://github.com/manmicheal214-maker/Humanizer" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      </div>
     </div>
   </header>
+
   <main class="container main-content">
-    <section class="hero"><div><p class="eyebrow">Semantic rewriting · Meaning preservation</p><h1>Make your writing sound <span>naturally yours.</span></h1><p class="hero-copy">Rewrite for clarity, flow, and variety without intentionally changing the facts, names, numbers, citations, or conclusions in your original text.</p></div><div class="privacy-note"><span>●</span> Text is processed by the configured AI provider. Don’t submit confidential information unless you’re comfortable with its policies.</div></section>
-    <section class="toolbar" aria-label="Rewrite settings"><div class="intensity" role="group" aria-label="Rewrite intensity"><span class="toolbar-label">Intensity</span><label><input type="radio" name="intensity" value="light"> <span>Light</span></label><label><input type="radio" name="intensity" value="balanced" checked> <span>Balanced</span></label><label><input type="radio" name="intensity" value="strong"> <span>Strong</span></label></div><p id="intensityHelp" class="intensity-help">Noticeable improvements with conservative restructuring.</p></section>
-    <section class="editor-grid">
-      <article class="panel"><div class="panel-head"><label for="inputText">Original text</label><div class="counts"><span id="inputWords">0 words</span><span id="inputCount">0 characters</span></div></div><textarea id="inputText" maxlength="20000" spellcheck="true" placeholder="Paste or type your text here…" aria-describedby="inputHint"></textarea><div class="panel-foot"><span id="inputHint">Up to 20,000 characters.</span><button id="clearBtn" class="text-button" type="button">Clear</button></div></article>
-      <article class="panel output-panel"><div class="panel-head"><label for="outputText">Rewritten text</label><div class="counts"><span id="outputWords">0 words</span><span id="outputCount">0 characters</span></div></div><textarea id="outputText" readonly placeholder="Your rewritten text will appear here…" aria-live="polite"></textarea><div class="panel-foot"><span id="status" role="status" aria-live="polite">Ready to rewrite.</span><button id="copyBtn" class="text-button" type="button">Copy</button></div></article>
+    <section id="heroSection" class="hero">
+      <div>
+        <p class="eyebrow">Deterministic Statistics · Linguistic Profiles · Meaning Preservation</p>
+        <h1>Content Analysis &amp; <span>Humanization Platform</span></h1>
+        <p class="hero-copy">Inspect structural cadence, repeated n-grams, and formulaic transitions with deterministic statistics. Humanize content with semantic rewriting that rigorously preserves your original facts, names, and data.</p>
+      </div>
+      <div class="privacy-note">
+        <span class="safe-dot">●</span> <strong>Meaning-Preservation First:</strong> No artificial typos or simulated errors. Strict factual fidelity.
+      </div>
     </section>
-    <div class="primary-actions"><button id="humanizeBtn" class="primary-button" type="button"><span>✦</span> Rewrite text</button></div>
-    <section id="diffSection" class="diff-section" hidden><div class="diff-head"><strong>Changes</strong><button id="diffToggle" class="text-button" type="button" aria-expanded="false">Show changes</button></div><div id="diffView" class="diff-view" hidden aria-live="polite"></div></section>
-    <section class="disclaimer"><strong>Review before publishing.</strong> AI rewriting can occasionally alter meaning. TextMy does not guarantee AI-detector results; it is designed as a natural-language rewriting and readability tool.</section>
+
+    <!-- Configuration Options Toolbar -->
+    <section id="configToolbar" class="config-toolbar" aria-label="Rewriting and analysis options">
+      <div class="toolbar-grid">
+        <div class="toolbar-field">
+          <label for="styleSelect">Rewrite Style</label>
+          <select id="styleSelect">
+            <option value="natural" selected>Natural (Organic cadence &amp; flow)</option>
+            <option value="conversational">Conversational (Warm &amp; direct)</option>
+            <option value="professional">Professional (Workplace &amp; polished)</option>
+            <option value="academic">Academic (Analytical &amp; rigorous)</option>
+            <option value="business">Business (Action-oriented &amp; concise)</option>
+            <option value="marketing">Marketing (Engaging &amp; persuasive)</option>
+            <option value="casual">Casual (Relaxed everyday prose)</option>
+            <option value="concise">Concise (Lean economy of words)</option>
+          </select>
+        </div>
+
+        <div class="toolbar-field">
+          <label for="audienceSelect">Target Audience</label>
+          <select id="audienceSelect">
+            <option value="general" selected>General Readers</option>
+            <option value="professionals">Industry Professionals</option>
+            <option value="academics">Scholars &amp; Researchers</option>
+            <option value="executives">Executive Leadership</option>
+            <option value="students">Students &amp; Learners</option>
+            <option value="customers">Consumers / Customers</option>
+            <option value="beginners">Beginners</option>
+          </select>
+        </div>
+
+        <div class="toolbar-field">
+          <label for="purposeSelect">Document Purpose</label>
+          <select id="purposeSelect">
+            <option value="general writing" selected>General Writing</option>
+            <option value="blog post">Blog Post / Article</option>
+            <option value="essay">Essay / Paper</option>
+            <option value="email">Professional Email</option>
+            <option value="report">Executive Report</option>
+            <option value="technical document">Technical Document</option>
+            <option value="creative article">Creative Article</option>
+          </select>
+        </div>
+
+        <div class="toolbar-field">
+          <label for="languageSelect">Language</label>
+          <select id="languageSelect">
+            <option value="en" selected>English (en)</option>
+            <option value="es">Spanish (es)</option>
+            <option value="fr">French (fr)</option>
+            <option value="de">German (de)</option>
+            <option value="pt">Portuguese (pt)</option>
+            <option value="it">Italian (it)</option>
+            <option value="nl">Dutch (nl)</option>
+            <option value="auto">Auto-detect</option>
+          </select>
+        </div>
+
+        <div class="toolbar-checkbox">
+          <label>
+            <input id="preserveFormattingCheckbox" type="checkbox" checked>
+            <span>Preserve formatting &amp; lists</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Editor Grid -->
+    <section class="editor-grid" aria-label="Text editors">
+      <!-- Input Panel -->
+      <article class="panel input-panel">
+        <div class="panel-head">
+          <div class="panel-title-group">
+            <label for="inputText">Original text</label>
+            <button id="loadSampleBtn" class="pill-button" type="button">Load sample AI text</button>
+          </div>
+          <div class="counts">
+            <span id="inputWords">0 words</span>
+            <span id="inputCount">0 characters</span>
+          </div>
+        </div>
+        <textarea id="inputText" maxlength="20000" spellcheck="true" placeholder="Paste or type your text here to analyze or humanize…" aria-describedby="inputHint"></textarea>
+        <div class="panel-foot">
+          <span id="inputHint">Max 20,000 characters. Factual data strictly preserved.</span>
+          <button id="clearBtn" class="text-button" type="button">Clear</button>
+        </div>
+      </article>
+
+      <!-- Output Panel -->
+      <article class="panel output-panel">
+        <div class="panel-head">
+          <div class="panel-title-group">
+            <label for="outputText">Rewritten text</label>
+            <span id="qualityBadge" class="quality-badge" hidden>Fidelity: 100%</span>
+          </div>
+          <div class="counts">
+            <span id="outputWords">0 words</span>
+            <span id="outputCount">0 characters</span>
+          </div>
+        </div>
+        <textarea id="outputText" readonly placeholder="Your humanized text will appear here with dynamic cadence and preserved meaning…" aria-live="polite"></textarea>
+        <div class="panel-foot">
+          <span id="status" role="status" aria-live="polite">Ready to inspect or rewrite.</span>
+          <div class="action-buttons-group">
+            <button id="copyBtn" class="text-button" type="button">Copy</button>
+            <button id="downloadBtn" class="text-button" type="button">Download</button>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- Primary Action Controls -->
+    <div class="primary-actions">
+      <button id="humanizeBtn" class="primary-button" type="button">
+        <span>✦</span> Rewrite &amp; Humanize
+      </button>
+      <button id="analyzeBtn" class="secondary-button" type="button">
+        <span>🔍</span> Analyze Text Only
+      </button>
+    </div>
+
+    <!-- Word Diff Section -->
+    <section id="diffSection" class="diff-section" hidden>
+      <div class="diff-head">
+        <div>
+          <strong>Word-Level Changes</strong>
+          <span class="diff-legend">
+            <span class="legend-added">+ Added</span>
+            <span class="legend-removed">- Removed</span>
+          </span>
+        </div>
+        <button id="diffToggle" class="text-button" type="button" aria-expanded="false">Show changes</button>
+      </div>
+      <div id="diffView" class="diff-view" hidden aria-live="polite"></div>
+    </section>
+
+    <!-- Comprehensive Analysis Report Dashboard -->
+    <section id="analysisDashboard" class="analysis-dashboard" hidden aria-label="Analysis report">
+      <div class="dashboard-header">
+        <div>
+          <span class="eyebrow">Computational &amp; Linguistic Breakdown</span>
+          <h2>Comprehensive Analysis Report</h2>
+        </div>
+        <button id="closeReportBtn" class="text-button" type="button">Hide report</button>
+      </div>
+
+      <!-- Metric Cards Grid -->
+      <div class="metrics-grid">
+        <!-- 1. Overall Assessment Card -->
+        <div id="assessmentCard" class="report-card col-span-2">
+          <div class="card-head">
+            <h3>1. Overall Assessment &amp; Stylistic Signals</h3>
+            <span id="overallBadge" class="badge-neutral">Probabilistic Indicators</span>
+          </div>
+          <div class="signals-split">
+            <div class="signal-col">
+              <h4>Observed AI-like Signals</h4>
+              <ul id="aiSignalsList" class="signal-list">
+                <li class="signal-empty">No dominant synthetic patterns detected.</li>
+              </ul>
+            </div>
+            <div class="signal-col">
+              <h4>Observed Human-like Signals</h4>
+              <ul id="humanSignalsList" class="signal-list">
+                <li class="signal-empty">Standard baseline cadence.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Perplexity & Burstiness -->
+        <div id="burstinessCard" class="report-card">
+          <div class="card-head">
+            <h3>2. Perplexity &amp; Burstiness</h3>
+            <span id="burstinessBadge" class="badge-neutral">Pacing Metrics</span>
+          </div>
+          <div class="card-body">
+            <div class="metric-row">
+              <span class="metric-label">Perplexity:</span>
+              <span id="perplexityValue" class="metric-value font-mono">Unavailable (Model log-probs required)</span>
+            </div>
+            <p id="perplexityNote" class="metric-caption">True perplexity PP = exp(-(1/N)·∑log P(w)) requires internal decoder token probabilities.</p>
+            <hr class="card-divider">
+            <div class="metric-row">
+              <span class="metric-label">Mean Sentence Length:</span>
+              <span id="meanSentenceLength" class="metric-value font-mono">0 words</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Sentence Length Std Dev:</span>
+              <span id="stdDevSentenceLength" class="metric-value font-mono">0.0</span>
+            </div>
+            <p id="burstinessInterpretation" class="metric-interpretation">Sample not yet evaluated.</p>
+          </div>
+        </div>
+
+        <!-- 3. Semantic & Adjacent Sentences -->
+        <div id="semanticCard" class="report-card">
+          <div class="card-head">
+            <h3>3. Sentence-to-Sentence Transitions</h3>
+            <span id="semanticMethodBadge" class="badge-neutral">Lexical Overlap</span>
+          </div>
+          <div class="card-body">
+            <p id="semanticExplanation" class="metric-caption">Evaluates adjacent sentence pairs for redundant restatement or abrupt contextual transitions.</p>
+            <div id="transitionIssuesContainer" class="flagged-list">
+              <div class="empty-notice">No adjacent transition issues flagged.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Stylometry & Readability -->
+        <div id="stylometryCard" class="report-card">
+          <div class="card-head">
+            <h3>4. Stylometry &amp; Readability</h3>
+            <span class="badge-neutral">Lexical Scale</span>
+          </div>
+          <div class="card-body">
+            <div class="metric-row">
+              <span class="metric-label">Lexical Diversity (TTR):</span>
+              <span id="ttrValue" class="metric-value font-mono">0.00</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Average Word Length:</span>
+              <span id="avgWordLength" class="metric-value font-mono">0.0 chars</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Vocabulary Size:</span>
+              <span id="vocabSizeValue" class="metric-value font-mono">0 unique</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Paragraph Count:</span>
+              <span id="paragraphCountValue" class="metric-value font-mono">0</span>
+            </div>
+            <div class="sentence-distro-box">
+              <span class="distro-title">Sentence Length Distribution:</span>
+              <div class="distro-bars">
+                <span id="distroShort" title="Short (<=10 words)">Short: 0</span>
+                <span id="distroMedium" title="Medium (11-25 words)">Med: 0</span>
+                <span id="distroLong" title="Long (26-40 words)">Long: 0</span>
+                <span id="distroVeryLong" title="Very Long (>40 words)">40+: 0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Repetition & N-Grams -->
+        <div id="repetitionCard" class="report-card">
+          <div class="card-head">
+            <h3>5. Repetition &amp; N-Grams</h3>
+            <span id="repetitionRateBadge" class="badge-neutral">Rate: 0%</span>
+          </div>
+          <div class="card-body">
+            <div class="ngram-section">
+              <span class="ngram-title">Repeated Bigrams (2-grams):</span>
+              <div id="bigramList" class="tag-cloud"><span class="tag-empty">None detected</span></div>
+            </div>
+            <div class="ngram-section">
+              <span class="ngram-title">Repeated Trigrams (3-grams):</span>
+              <div id="trigramList" class="tag-cloud"><span class="tag-empty">None detected</span></div>
+            </div>
+            <div class="ngram-section">
+              <span class="ngram-title">Repeated 4-Grams:</span>
+              <div id="fourgramList" class="tag-cloud"><span class="tag-empty">None detected</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. Vocabulary & Formulaic Phrases -->
+        <div id="vocabularyCard" class="report-card col-span-2">
+          <div class="card-head">
+            <h3>6. Transitions &amp; Formulaic Stock Phrases</h3>
+            <span class="badge-neutral">Lexical Markers</span>
+          </div>
+          <div class="card-body">
+            <div class="vocab-split">
+              <div class="vocab-col">
+                <span class="vocab-heading">Detected Formulaic Expressions:</span>
+                <div id="formulaicPhrasesList" class="tag-cloud">
+                  <span class="tag-empty">No stock phrases detected</span>
+                </div>
+              </div>
+              <div class="vocab-col">
+                <span class="vocab-heading">Transition Words Distribution:</span>
+                <div id="transitionWordsList" class="tag-cloud">
+                  <span class="tag-empty">No generic transitions</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Section-by-Section Observations -->
+        <div id="sectionsCard" class="report-card col-span-2">
+          <div class="card-head">
+            <h3>7. Section-by-Section Structural Observations</h3>
+            <span class="badge-neutral">Paragraph Cadence</span>
+          </div>
+          <div id="sectionObservationsList" class="card-body observations-container">
+            <div class="empty-notice">Run analysis to generate section-level breakdown.</div>
+          </div>
+        </div>
+
+        <!-- 8. Mandatory Limitations Notice -->
+        <div id="limitationsCard" class="report-card col-span-2 limitations-card">
+          <div class="card-head">
+            <h3>8. Mandatory Limitations &amp; Ethical Statement</h3>
+            <span class="badge-warning">Probabilistic Context</span>
+          </div>
+          <div class="card-body">
+            <ul class="limitations-list">
+              <li><strong>AI detectors are probabilistic:</strong> Automated classification tools rely on statistical pattern matching and cannot conclusively prove authorship.</li>
+              <li><strong>Perplexity is relative:</strong> Perplexity depends entirely on the language model evaluated and domain familiarity.</li>
+              <li><strong>Human writing exhibits regular patterns:</strong> Academic, legal, technical, and non-native writing frequently exhibit low burstiness and formulaic transitions without being synthetic.</li>
+              <li><strong>AI text can be instructed to vary:</strong> Prompts can instruct AI models to produce high burstiness and varied vocabulary.</li>
+              <li><strong>Paraphrasing alters signatures:</strong> Editing and rewrites alter stylistic markers without changing factual veracity.</li>
+              <li><strong>Stylometry is not proof:</strong> No computational analysis alone constitutes definitive proof of human or synthetic origin.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ethical Disclaimer Footer Banner -->
+    <section class="disclaimer">
+      <strong>Responsible Content Craftsmanship:</strong> TextMy focuses on clarity, readability, and meaning preservation. We strictly avoid deliberately injecting typos or false mistakes to spoof detectors. Always review rewrites before publishing.
+    </section>
   </main>
-  <footer class="site-footer"><div class="container footer-inner"><span>TextMy AI Humanizer</span><span>Semantic rewriting · No text storage by this application</span></div></footer>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>TextMy AI Platform · Content Analysis &amp; Meaning-Preserving Rewriting</span>
+      <span>Cloudflare Workers · Cloudflare D1 · Cloudflare KV · Gemini API</span>
+    </div>
+  </footer>
+
   <script>
     window.TEXTMY_API_URL = "/api";
     if (typeof location !== "undefined" && location.hostname.endsWith("github.io")) {

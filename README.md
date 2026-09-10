@@ -1,37 +1,143 @@
-# TextMy AI Humanizer
+# TextMy Content Analysis & Humanization Platform
 
-A semantic rewriting and readability application that rewrites text for clearer, more natural flow while preserving meaning, facts, and conclusions.
+A production-ready content analysis and rewriting platform built with **Cloudflare Workers**, **Cloudflare D1**, **Cloudflare KV**, and the **Gemini API**.
 
-## Architecture
+TextMy combines deterministic mathematical analysis (burstiness, sentence distribution, repeated n-grams, stock transition markers) with semantic rewriting that rigorously preserves all original facts, names, dates, citations, and conclusions.
 
-This repository is a self-contained full-stack Node.js & Express application:
+---
 
-```text
-├── frontend/                  # Static web client (HTML, CSS, client-side JS)
-│   ├── index.html             # Main application UI
-│   ├── style.css              # Responsive theme and styling
-│   ├── app.js                 # UI interactions, diff generation, character counting
-│   └── semantic-client.js     # Client API connector (routes to /api)
-├── backend/                   # Core rewriting and middleware logic
-│   ├── semantic-rewriter.js   # Server-side Gemini AI rewriting engine
-│   └── rate-limiter.js        # IP rate limiting
-├── server.js                  # Unified Express server (serves frontend + /api)
-├── package.json               # Dependencies and start scripts
-├── .env.example               # Environment variable templates
-└── scripts/
-    └── smoke-test.sh          # Endpoint health, CORS, and rewrite verification
+## Key Features
+
+- **Deterministic Statistical Analysis**: Real-time evaluation of word counts, paragraph counts, sentence length standard deviation (burstiness), type-token ratio (lexical diversity), and n-gram phrase repetition without language model hallucination.
+- **Semantic & Factual Preservation**: Rewrites for organic cadence and natural flow while strictly maintaining factual data, proper nouns, quotations, measurements, and the author's exact positions.
+- **Probabilistic Calibration**: Clear labeling of perplexity and detector limitations. Avoids misleading binary claims (e.g. "100% human score") or fabricated error injection.
+- **Linguistic Insights**: Deep style, formality, and section-by-section analysis powered by Gemini.
+- **Cloudflare Edge Deployment**: Serverless runtime on Cloudflare Workers, persistent user and usage tracking on Cloudflare D1, and high-speed rate limiting on Cloudflare KV.
+- **Flexible Styling & Audiences**: Supports 8 writing styles (natural, conversational, professional, academic, business, marketing, casual, concise), 7 target audiences, and multiple languages.
+- **Word-Level Visual Diff**: In-browser comparison view showing exact additions and deletions.
+
+---
+
+## Architectural Pipeline
+
+```
+[User Text]
+     │
+     ▼
+┌─────────────────────────────────────────────────────────┐
+│ 1. Deterministic Statistical Analysis                   │
+│    • Word/char counts, sentence length std dev          │
+│    • Lexical diversity (TTR) & n-gram repetition        │
+│    • Transition markers & formulaic phrase detection    │
+└───────────────────────────┬─────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────┐
+│ 2. Semantic & Sentence Transition Analysis              │
+│    • Lexical Jaccard overlap / vector embeddings        │
+│    • Flag potential redundant or abrupt transitions     │
+└───────────────────────────┬─────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────┐
+│ 3. Semantic Rewriting Engine (Gemini)                   │
+│    • Dynamic sentence pacing & rhythm                   │
+│    • Eliminates stock transitions & passive drag        │
+│    • Zero fact alteration or manufactured errors        │
+└───────────────────────────┬─────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────┐
+│ 4. Quality & Meaning Preservation Checker               │
+│    • Automated comparison of original vs rewritten text │
+│    • Verifies facts, numbers, dates, and conclusions    │
+│    • Optional targeted correction pass if needed        │
+└───────────────────────────┬─────────────────────────────┘
+                            │
+                            ▼
+[Rewritten Content + Comprehensive Analysis Dashboard]
 ```
 
-## Features
+---
 
-- **Semantic Rewriting**: Preserves facts, quotes, citations, numbers, URLs, and core conclusions while improving clarity and sentence variety.
-- **Adjustable Intensity**: Light, Balanced, and Strong modes.
-- **In-Browser Word Diff**: Live word-level changes view without sending diffs to the server.
-- **Server-Side AI Protection**: API keys remain protected on the server using `@google/genai` with REST fallback.
-- **Responsive Theme**: Light and dark mode support with accessible contrast.
-- **Rate Limiting & Safety**: In-memory rate limiting and input sanitization.
+## Project Structure
 
-## Getting Started
+```text
+├── cloudflare-worker.js         # Production Cloudflare Worker entry point
+├── wrangler.toml                # Cloudflare Worker, D1, and KV configuration
+├── migrations/
+│   └── 0001_initial_schema.sql  # Cloudflare D1 SQL schema (users, usage, history)
+├── backend/
+│   ├── config.js                # Global configuration, models, usage plans
+│   ├── deterministic-analyzer.js# Statistical analyzer (variance, n-grams, transitions)
+│   ├── embeddings.js            # Semantic & lexical similarity engine
+│   ├── gemini-client.js         # Resilient Gemini client with multi-model fallback
+│   ├── pipeline.js              # Orchestrator (analysis -> rewrite -> quality check)
+│   ├── rate-limiter.js          # Distributed rate limiting (KV and in-memory)
+│   ├── storage.js               # Storage abstraction (D1 / SQLite / in-memory)
+│   ├── validator.js             # Schema validation and input sanitation
+│   └── prompts/
+│       ├── analyzer.js          # Linguistic analysis prompt
+│       ├── rewriter.js          # Meaning-preserving rewriter prompt
+│       ├── checker.js           # Quality audit prompt
+│       └── correction.js        # Targeted correction prompt
+├── frontend/
+│   ├── index.html               # Web interface and analysis dashboard
+│   ├── style.css                # Dark/light theme styling with WCAG contrast
+│   ├── app.js                   # UI logic, diff calculation, metrics visualization
+│   └── semantic-client.js       # Client API connector
+├── server.js                    # Node.js/Express server for local development
+├── tests/
+│   └── deterministic.test.js    # Unit tests for text analyzer & pipeline
+└── scripts/
+    └── smoke-test.sh            # Automated verification test script
+```
+
+---
+
+## Cloudflare Deployment
+
+### 1. Configure Cloudflare Wrangler
+
+Ensure you are logged into Wrangler:
+
+```bash
+npx wrangler login
+```
+
+### 2. Create D1 Database and KV Namespace
+
+```bash
+# Create D1 database
+npx wrangler d1 create textmy-db
+
+# Initialize database schema
+npx wrangler d1 execute textmy-db --file=migrations/0001_initial_schema.sql
+
+# Create KV namespace for rate limiting
+npx wrangler kv namespace create RATE_LIMIT_KV
+```
+
+Update `wrangler.toml` with the generated `database_id` and `id` values.
+
+### 3. Set Cloudflare Secret
+
+```bash
+npx wrangler secret put GEMINI_API_KEY
+```
+
+### 4. Deploy to Cloudflare Workers
+
+```bash
+npx wrangler deploy
+```
+
+> **Direct Cloudflare Dashboard Option:**
+> You can also copy and paste `cloudflare-worker.js` directly into the Cloudflare Worker Web Editor. It is completely self-contained, includes all deterministic analyzers, fallback models, and D1/KV bindings, and runs without any build steps.
+
+---
+
+## Local Development (Node.js)
 
 ### 1. Install Dependencies
 
@@ -41,47 +147,66 @@ npm install
 
 ### 2. Configure Environment
 
-Copy `.env.example` to `.env` and set your Gemini API key:
-
 ```bash
 cp .env.example .env
 ```
 
+Set your `GEMINI_API_KEY` in `.env`:
+
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-3.8-flash
-MAX_INPUT_CHARS=20000
-RATE_LIMIT_PER_MINUTE=60
+GEMINI_API_KEY=your_key_here
+GEMINI_MODEL=gemini-3.1-flash-lite
 ```
 
-### 3. Run the Server
+### 3. Run Development Server
 
 ```bash
 npm run dev
 ```
 
-The application will be accessible at `http://localhost:3000`.
+Visit `http://localhost:3000` in your browser.
 
-### 4. Run Smoke Tests
-
-Verify the endpoints and rewriting service:
+### 4. Run Tests
 
 ```bash
-bash scripts/smoke-test.sh
+npm test
 ```
 
-## Pushing to a New GitHub Repository
+---
 
-You can export this project into a new repository using either method:
+## API Endpoints
 
-### Method 1: AI Studio Export (Recommended)
-1. Open the **Settings / Menu** in AI Studio.
-2. Select **Export to GitHub** (or Download ZIP).
-3. Connect your GitHub account to publish directly into a new repository.
+### `POST /api/analyze`
+Accepts `{ "text": "..." }` and returns complete deterministic statistics, burstiness, n-gram repetitions, formulaic phrases, sentence transition scores, linguistic profile, and probabilistic signals.
 
-### Method 2: Git CLI
-```bash
-git remote add origin https://github.com/<your-username>/<new-repo-name>.git
-git branch -M main
-git push -u origin main
+### `POST /api/humanize`
+Accepts:
+```json
+{
+  "text": "Original text...",
+  "style": "natural",
+  "audience": "general",
+  "purpose": "general writing",
+  "language": "en",
+  "preserveFormatting": true
+}
 ```
+Executes the full pipeline: deterministic analysis → Gemini rewrite → quality check → usage recording. Returns rewritten text, quality score, and analytical profile.
+
+### `POST /api/rewrite`
+Backward-compatible endpoint for existing integrations. Accepts `{ "text": "...", "intensity": "balanced" }`.
+
+### `GET /api/usage`
+Returns monthly character allowance, current character usage, and reset date for the authenticated or anonymous user.
+
+### `GET /health` or `GET /api/health`
+Returns service status, version, and binding status.
+
+---
+
+## Ethical Disclosure & Limitations
+
+1. **Probabilistic Nature**: Stylometric metrics and AI detectors are probabilistic classifiers. They cannot definitively prove or disprove human authorship.
+2. **Perplexity Constraints**: Perplexity is model-dependent and requires token log-probabilities. It is never fabricated.
+3. **Domain Normalization**: Formal, academic, legal, technical, and non-native English writing naturally exhibit lower burstiness and formal transition patterns without being AI-generated.
+4. **Factual Fidelity**: TextMy does NOT intentionally inject spelling errors, grammatical mistakes, or typos. High-quality humanization focuses on dynamic rhythm, organic transitions, and expressive vocabulary while keeping all facts intact.
