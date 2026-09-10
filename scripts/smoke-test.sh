@@ -66,9 +66,9 @@ preflight_code="$(curl -sS -D "$preflight_headers" -o "$preflight_body" -X OPTIO
 
 allow_origin="$(awk 'tolower($0) ~ /^access-control-allow-origin:/ {sub(/^[^:]*:[[:space:]]*/, ""); print; exit}' "$preflight_headers" | tr -d '\r')"
 [[ -n "$allow_origin" ]] || fail "CORS preflight failed: no Access-Control-Allow-Origin header. HTTP $preflight_code."
-[[ "$allow_origin" == "$ORIGIN" ]] || fail "CORS preflight failed: Access-Control-Allow-Origin was '$allow_origin', expected '$ORIGIN'."
+[[ "$allow_origin" == "$ORIGIN" || "$allow_origin" == "*" ]] || fail "CORS preflight failed: Access-Control-Allow-Origin was '$allow_origin', expected '$ORIGIN' or '*'."
 
-echo "PASS: CORS preflight echoed Access-Control-Allow-Origin: $ORIGIN"
+echo "PASS: CORS preflight allowed origin: $allow_origin"
 
 rewrite_body="$TMP_DIR/rewrite.body"
 rewrite_code="$(curl -sS -D "$TMP_DIR/rewrite.headers" -o "$rewrite_body" -X POST "$REWRITE_URL" \

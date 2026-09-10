@@ -38,5 +38,6 @@ jobs:
 
       - name: Verify live API
         env:
+          TEXTMY_API_URL: https://textmy-api.manmicheal214.workers.dev
           TEXTMY_ORIGIN: https://manmicheal214-maker.github.io
         run: bash ./scripts/smoke-test.sh
