@@ -8,6 +8,7 @@
     "dev": "node server.js",
     "start": "node server.js",
     "test": "node --test tests/*.test.js",
+    "lint": "node --check server.js cloudflare-worker.js backend/*.js",
     "build": "echo \"Build complete\""
   },
   "dependencies": {

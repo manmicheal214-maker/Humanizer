@@ -33,6 +33,9 @@ function parseStrictJson(text, fallback = {}) {
   }
 }
 
+// In-memory circuit breaker for models currently experiencing rate-limiting (429)
+const throttledModels = new Map();
+
 async function callGemini({
   prompt,
   systemInstruction,
@@ -50,12 +53,23 @@ async function callGemini({
     throw err;
   }
 
-  const models = [
+  const now = Date.now();
+  const rawList = [
     model,
     ...CONFIG.FALLBACK_MODELS
   ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
+  // Put currently unthrottled models first so we don't stall on known rate-limited models
+  const models = [...rawList].sort((a, b) => {
+    const aThrottled = (throttledModels.get(a) || 0) > now;
+    const bThrottled = (throttledModels.get(b) || 0) > now;
+    if (aThrottled === bThrottled) return 0;
+    return aThrottled ? 1 : -1;
+  });
+
   let lastError = null;
+  let lastRetryAfter = null;
+  let lastErrorDetail = "";
 
   for (const currentModel of models) {
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -92,6 +106,7 @@ async function callGemini({
         clearTimeout(timer);
 
         if (response.ok) {
+          throttledModels.delete(currentModel);
           const data = await response.json();
           const rawText = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("").trim();
           const usageMetadata = data?.usageMetadata || {};
@@ -121,12 +136,28 @@ async function callGemini({
         }
 
         const status = response.status;
+        lastErrorDetail = errorDetail;
         lastError = new Error(`AI service returned HTTP ${status}: ${errorDetail || "Error"}`);
         lastError.status = status;
 
-        // On transient load or rate-limit, move immediately to the next fallback model
-        if (status === 429 || status === 503) {
-          console.warn(`Model ${currentModel} returned HTTP ${status}. Trying next fallback model...`);
+        // Parse retry-after from Google error message or header
+        if (status === 429) {
+          const match = errorDetail.match(/retry in\s+([0-9.]+)\s*s/i);
+          if (match) {
+            lastRetryAfter = Math.ceil(parseFloat(match[1]));
+          } else {
+            const h = response.headers.get("retry-after");
+            if (h) lastRetryAfter = parseInt(h, 10) || 30;
+          }
+          const cooldownSec = lastRetryAfter || 30;
+          throttledModels.set(currentModel, Date.now() + cooldownSec * 1000);
+          console.warn(`Model ${currentModel} returned HTTP 429 quota limit. Set ${cooldownSec}s circuit breaker cooldown. Trying next fallback model...`);
+          break;
+        }
+
+        if (status === 503) {
+          throttledModels.set(currentModel, Date.now() + 15000);
+          console.warn(`Model ${currentModel} returned HTTP 503 high demand. Trying next fallback model...`);
           break;
         }
 
@@ -148,16 +179,22 @@ async function callGemini({
     }
   }
 
-  // Safe normalized error
+  // Safe normalized error with retry metadata
+  const is429 = lastError?.status === 429;
+  const is503 = lastError?.status === 503;
+  const retrySec = lastRetryAfter || 30;
+
   const safeError = new Error(
-    lastError?.status === 429
-      ? "AI service is currently at capacity. Please try again shortly."
-      : (lastError?.status === 503
+    is429
+      ? `AI quota limit reached on provider. Please retry in ${retrySec} seconds, or try with shorter text.`
+      : (is503
         ? "AI model is currently experiencing high demand. Please retry in a few moments."
         : "Unable to process content with the AI service at this time.")
   );
-  safeError.code = "AI_REQUEST_FAILED";
-  safeError.status = lastError?.status || 502;
+  safeError.code = is429 ? "AI_QUOTA_EXCEEDED" : (is503 ? "AI_UNAVAILABLE" : "AI_REQUEST_FAILED");
+  safeError.status = is429 ? 429 : (lastError?.status || 502);
+  safeError.retryAfter = is429 ? retrySec : undefined;
+  safeError.details = lastErrorDetail;
   throw safeError;
 }
 

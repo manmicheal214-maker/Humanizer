@@ -125,11 +125,15 @@ app.post("/api/humanize", rateLimit, async (req, res) => {
     const duration = Date.now() - req.startTime;
     console.error(`[${requestId}] Humanize failed after ${duration}ms:`, error.message);
     const status = error.status || (error.code === "QUOTA_EXCEEDED" ? 403 : 502);
+    if (error.retryAfter) {
+      res.set("Retry-After", String(error.retryAfter));
+    }
     return res.status(status).json({
       success: false,
       error: {
         code: error.code || "HUMANIZE_FAILED",
-        message: error.message || "Content transformation failed."
+        message: error.message || "Content transformation failed.",
+        retryAfter: error.retryAfter
       }
     });
   }
@@ -165,8 +169,13 @@ app.post("/api/rewrite", rateLimit, async (req, res) => {
     });
   } catch (error) {
     console.error(`[${requestId}] Rewrite failed:`, error.message);
-    return res.status(error.status || 502).json({
-      error: error.message || "The rewriting service is temporarily unavailable."
+    const status = error.status || 502;
+    if (error.retryAfter) {
+      res.set("Retry-After", String(error.retryAfter));
+    }
+    return res.status(status).json({
+      error: error.message || "The rewriting service is temporarily unavailable.",
+      retryAfter: error.retryAfter
     });
   }
 });

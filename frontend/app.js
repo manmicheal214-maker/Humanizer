@@ -263,8 +263,45 @@ closeReportBtn.addEventListener("click", () => {
   analysisDashboard.hidden = true;
 });
 
+let rateLimitCountdown = null;
+
+function handleRateLimitError(error) {
+  let seconds = error.retryAfter;
+  if (!seconds) {
+    const match = (error.message || "").match(/retry in\s+([0-9.]+)\s*s/i);
+    if (match) seconds = Math.ceil(parseFloat(match[1]));
+  }
+  if (!seconds) {
+    const secMatch = (error.message || "").match(/([0-9]+)\s*seconds?/i);
+    if (secMatch) seconds = parseInt(secMatch[1], 10);
+  }
+  if (!seconds || isNaN(seconds)) seconds = 30;
+
+  if (rateLimitCountdown) clearInterval(rateLimitCountdown);
+
+  let remaining = seconds;
+  setStatus(`AI quota limit reached on provider. Cooldown in progress: ready in ${remaining}s…`, "error");
+  humanizeBtn.disabled = true;
+
+  rateLimitCountdown = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(rateLimitCountdown);
+      rateLimitCountdown = null;
+      humanizeBtn.disabled = false;
+      setStatus("Cooldown complete. Ready to retry rewriting.", "default");
+    } else {
+      setStatus(`AI quota limit reached on provider. Cooldown in progress: ready in ${remaining}s…`, "error");
+    }
+  }, 1000);
+}
+
 // Humanize Action
 humanizeBtn.addEventListener("click", async () => {
+  if (rateLimitCountdown) {
+    setStatus("Please wait for the current rate-limit cooldown to finish.", "error");
+    return;
+  }
   const text = inputText.value.trim();
   if (!text) {
     setStatus("Please enter some text first.", "error");
@@ -311,9 +348,17 @@ humanizeBtn.addEventListener("click", async () => {
     loadUsage();
   } catch (error) {
     console.error("Humanize failed:", error.message);
-    setStatus(error.message || "Rewriting service is temporarily unavailable.", "error");
+    const isRateLimit = error.status === 429 ||
+      /quota|rate limit|429|retry in/i.test(error.message || "");
+    if (isRateLimit) {
+      handleRateLimitError(error);
+    } else {
+      setStatus(error.message || "Rewriting service is temporarily unavailable.", "error");
+    }
   } finally {
-    humanizeBtn.disabled = false;
+    if (!rateLimitCountdown) {
+      humanizeBtn.disabled = false;
+    }
     analyzeBtn.disabled = false;
     humanizeBtn.innerHTML = "<span>✦</span> Rewrite &amp; Humanize";
   }
@@ -343,7 +388,13 @@ analyzeBtn.addEventListener("click", async () => {
     }
   } catch (error) {
     console.error("Analysis failed:", error.message);
-    setStatus(error.message || "Failed to analyze text.", "error");
+    const isRateLimit = error.status === 429 ||
+      /quota|rate limit|429|retry in/i.test(error.message || "");
+    if (isRateLimit) {
+      handleRateLimitError(error);
+    } else {
+      setStatus(error.message || "Failed to analyze text.", "error");
+    }
   } finally {
     analyzeBtn.disabled = false;
     humanizeBtn.disabled = false;

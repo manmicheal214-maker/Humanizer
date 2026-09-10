@@ -46,6 +46,10 @@
         const err = new Error(msg);
         err.status = response.status;
         err.code = data?.error?.code;
+        err.retryAfter = data?.error?.retryAfter || data?.retryAfter;
+        if (!err.retryAfter && response.headers.get("retry-after")) {
+          err.retryAfter = parseInt(response.headers.get("retry-after"), 10) || null;
+        }
         throw err;
       }
 

@@ -133,3 +133,12 @@ test("cleanRewrittenText strips conversational AI preambles and code fences", ()
   const withFences = "```markdown\nThis is pure text.\n```";
   assert.equal(cleanRewrittenText(withFences), "This is pure text.");
 });
+
+test("CONFIG prioritizes high-throughput models over throttled legacy models", () => {
+  const CONFIG = require("../backend/config");
+  assert.equal(CONFIG.DEFAULT_MODEL, "gemini-3.1-flash-lite");
+  assert.ok(CONFIG.FALLBACK_MODELS.includes("gemini-3.1-flash-lite"));
+  assert.ok(CONFIG.FALLBACK_MODELS.includes("gemini-3.8-flash"));
+  // Ensure primary model is not the 20 RPM throttled gemini-2.5-flash
+  assert.notEqual(CONFIG.DEFAULT_MODEL, "gemini-2.5-flash");
+});

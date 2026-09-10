@@ -377,6 +377,9 @@ function parseStrictJson(text, fallback = {}) {
   }
 }
 
+// In-memory circuit breaker for models experiencing rate limits
+const workerThrottledModels = new Map();
+
 async function callGeminiWorker({ prompt, systemInstruction, apiKey, model, temperature = 0.7, jsonMode = false }) {
   if (!apiKey) {
     const err = new Error("GEMINI_API_KEY secret is not set in Cloudflare Worker settings.");
@@ -384,8 +387,18 @@ async function callGeminiWorker({ prompt, systemInstruction, apiKey, model, temp
     throw err;
   }
 
-  const models = [model, ...CONFIG.FALLBACK_MODELS].filter((m, i, arr) => m && arr.indexOf(m) === i);
+  const now = Date.now();
+  const rawList = [model, ...CONFIG.FALLBACK_MODELS].filter((m, i, arr) => m && arr.indexOf(m) === i);
+  // Sort models with active cooldowns to the end
+  const models = [...rawList].sort((a, b) => {
+    const aThrottled = (workerThrottledModels.get(a) || 0) > now;
+    const bThrottled = (workerThrottledModels.get(b) || 0) > now;
+    if (aThrottled === bThrottled) return 0;
+    return aThrottled ? 1 : -1;
+  });
+
   let lastError = null;
+  let lastRetryAfter = null;
 
   for (const currentModel of models) {
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -405,6 +418,7 @@ async function callGeminiWorker({ prompt, systemInstruction, apiKey, model, temp
         });
 
         if (res.ok) {
+          workerThrottledModels.delete(currentModel);
           const data = await res.json();
           const rawText = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("").trim();
           const usageMetadata = data?.usageMetadata || {};
@@ -419,10 +433,33 @@ async function callGeminiWorker({ prompt, systemInstruction, apiKey, model, temp
           };
         }
 
+        let errorDetail = "";
+        try {
+          const errJson = await res.json();
+          errorDetail = errJson?.error?.message || "";
+        } catch {
+          errorDetail = await res.text().catch(() => "");
+        }
+
         const status = res.status;
-        lastError = new Error(`AI service returned status ${status}`);
+        lastError = new Error(`AI service returned status ${status}: ${errorDetail || "Error"}`);
         lastError.status = status;
-        if (status === 429 || status === 503) {
+
+        if (status === 429) {
+          const match = errorDetail.match(/retry in\s+([0-9.]+)\s*s/i);
+          if (match) {
+            lastRetryAfter = Math.ceil(parseFloat(match[1]));
+          } else {
+            const h = res.headers.get("retry-after");
+            if (h) lastRetryAfter = parseInt(h, 10) || 30;
+          }
+          const cooldownSec = lastRetryAfter || 30;
+          workerThrottledModels.set(currentModel, Date.now() + cooldownSec * 1000);
+          break;
+        }
+
+        if (status === 503) {
+          workerThrottledModels.set(currentModel, Date.now() + 15000);
           break;
         }
         break;
@@ -436,14 +473,20 @@ async function callGeminiWorker({ prompt, systemInstruction, apiKey, model, temp
     }
   }
 
+  const is429 = lastError?.status === 429;
+  const is503 = lastError?.status === 503;
+  const retrySec = lastRetryAfter || 30;
+
   const safeError = new Error(
-    lastError?.status === 429
-      ? "AI service is currently at capacity. Please try again shortly."
-      : (lastError?.status === 503
+    is429
+      ? `AI quota limit reached on provider. Please retry in ${retrySec} seconds, or try with shorter text.`
+      : (is503
         ? "AI model is currently experiencing high demand. Please retry in a few moments."
         : "Unable to process content with the AI service at this time.")
   );
-  safeError.status = lastError?.status || 502;
+  safeError.code = is429 ? "AI_QUOTA_EXCEEDED" : (is503 ? "AI_UNAVAILABLE" : "AI_REQUEST_FAILED");
+  safeError.status = is429 ? 429 : (lastError?.status || 502);
+  safeError.retryAfter = is429 ? retrySec : undefined;
   throw safeError;
 }
 
@@ -760,12 +803,21 @@ REWRITTEN: """${rewritten}"""`;
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       } catch (err) {
+        const status = err.status || 502;
+        const resHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+        if (err.retryAfter) {
+          resHeaders["Retry-After"] = String(err.retryAfter);
+        }
         return new Response(JSON.stringify({
-          error: err.message || "Rewriting service is temporarily unavailable.",
-          message: err.message || "Rewriting service is temporarily unavailable."
+          success: false,
+          error: {
+            code: err.code || (status === 429 ? "RATE_LIMIT_EXCEEDED" : "REWRITE_FAILED"),
+            message: err.message || "Rewriting service is temporarily unavailable.",
+            retryAfter: err.retryAfter
+          }
         }), {
-          status: err.status || 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
+          status,
+          headers: resHeaders
         });
       }
     }
