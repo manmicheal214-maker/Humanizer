@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+API_URL="${TEXTMY_API_URL:-}"
+ORIGIN="${TEXTMY_ORIGIN:-https://manmicheal214-maker.github.io}"
+
+if [[ -z "$API_URL" ]]; then
+  API_URL="$(python3 - <<'PY'
+from pathlib import Path
+import re
+text = Path('frontend/index.html').read_text(encoding='utf-8')
+m = re.search(r'window\.TEXTMY_API_URL\s*=\s*[\"\x27]([^\"\x27]+)', text)
+if not m:
+    raise SystemExit('ERROR: Could not find window.TEXTMY_API_URL in frontend/index.html')
+print(m.group(1).rstrip('/'))
+PY
+)"
+fi
+
+if [[ "$API_URL" == /* ]]; then
+  API_URL="http://localhost:3000${API_URL}"
+fi
+
+HEALTH_URL="${API_URL%/}/health"
+REWRITE_URL="${API_URL%/}/rewrite"
+
+fail() {
+  echo "ERROR: $*" >&2
+  exit 1
+}
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || fail "Required command '$1' is not installed."
+}
+
+require_command curl
+require_command python3
+
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+health_headers="$TMP_DIR/health.headers"
+health_body="$TMP_DIR/health.body"
+health_code="$(curl -sS -D "$health_headers" -o "$health_body" -w '%{http_code}' "$HEALTH_URL" || true)"
+[[ "$health_code" == "200" ]] || fail "Health check failed: $HEALTH_URL returned HTTP $health_code. Body: $(cat "$health_body" 2>/dev/null || true)"
+python3 - "$health_body" <<'PY'
+import json, sys
+p = sys.argv[1]
+try:
+    data = json.load(open(p, encoding='utf-8'))
+except Exception as exc:
+    raise SystemExit(f'ERROR: Health endpoint did not return valid JSON: {exc}')
+if data.get('status') != 'ok':
+    raise SystemExit(f"ERROR: Health endpoint returned unexpected JSON: {data}")
+PY
+
+echo "PASS: $HEALTH_URL returned HTTP 200 with status=ok"
+
+preflight_headers="$TMP_DIR/preflight.headers"
+preflight_body="$TMP_DIR/preflight.body"
+preflight_code="$(curl -sS -D "$preflight_headers" -o "$preflight_body" -X OPTIONS "$REWRITE_URL" \
+  -H "Origin: $ORIGIN" \
+  -H 'Access-Control-Request-Method: POST' \
+  -H 'Access-Control-Request-Headers: content-type' \
+  -w '%{http_code}' || true)"
+
+allow_origin="$(awk 'tolower($0) ~ /^access-control-allow-origin:/ {sub(/^[^:]*:[[:space:]]*/, ""); print; exit}' "$preflight_headers" | tr -d '\r')"
+[[ -n "$allow_origin" ]] || fail "CORS preflight failed: no Access-Control-Allow-Origin header. HTTP $preflight_code."
+[[ "$allow_origin" == "$ORIGIN" ]] || fail "CORS preflight failed: Access-Control-Allow-Origin was '$allow_origin', expected '$ORIGIN'."
+
+echo "PASS: CORS preflight echoed Access-Control-Allow-Origin: $ORIGIN"
+
+rewrite_body="$TMP_DIR/rewrite.body"
+rewrite_code="$(curl -sS -D "$TMP_DIR/rewrite.headers" -o "$rewrite_body" -X POST "$REWRITE_URL" \
+  -H "Origin: $ORIGIN" \
+  -H 'Content-Type: application/json' \
+  --data '{"text":"The system was developed by the engineering team.","intensity":"balanced"}' \
+  -w '%{http_code}' || true)"
+[[ "$rewrite_code" == "200" ]] || fail "Rewrite smoke test failed: $REWRITE_URL returned HTTP $rewrite_code. Body: $(cat "$rewrite_body" 2>/dev/null || true)"
+
+python3 - "$rewrite_body" <<'PY'
+import json, sys
+p = sys.argv[1]
+try:
+    data = json.load(open(p, encoding='utf-8'))
+except Exception as exc:
+    raise SystemExit(f'ERROR: Rewrite endpoint did not return valid JSON: {exc}')
+text = data.get('rewrittenText') or data.get('text') or data.get('rewritten')
+if not isinstance(text, str) or not text.strip():
+    raise SystemExit(f'ERROR: Rewrite endpoint returned no rewritten text: {data}')
+print(f'PASS: rewrite returned text: {text}')
+PY

@@ -1,0 +1,6 @@
+{
+  "name": "TextMy AI Humanizer",
+  "description": "Rewrite text for clearer, more natural readability while preserving meaning.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

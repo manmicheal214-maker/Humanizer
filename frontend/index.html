@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="TextMy AI Humanizer rewrites text for clearer, more natural readability while preserving meaning.">
+  <meta property="og:title" content="TextMy AI Humanizer">
+  <meta property="og:description" content="TextMy AI Humanizer rewrites text for clearer, more natural readability while preserving meaning.">
+  <meta name="theme-color" content="#0f172a">
+  <title>TextMy AI Humanizer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="./" aria-label="TextMy AI Humanizer home"><span class="brand-mark">✦</span><span>TextMy <strong>AI Humanizer</strong></span></a>
+      <nav class="header-actions" aria-label="Primary"><button id="themeToggle" class="icon-button" type="button" aria-label="Switch theme" title="Switch theme">☼</button><a class="github-link" href="https://github.com/manmicheal214-maker/textmy-ai-humanizer" target="_blank" rel="noopener noreferrer">GitHub ↗</a></nav>
+    </div>
+  </header>
+  <main class="container main-content">
+    <section class="hero"><div><p class="eyebrow">Semantic rewriting · Meaning preservation</p><h1>Make your writing sound <span>naturally yours.</span></h1><p class="hero-copy">Rewrite for clarity, flow, and variety without intentionally changing the facts, names, numbers, citations, or conclusions in your original text.</p></div><div class="privacy-note"><span>●</span> Text is processed by the configured AI provider. Don’t submit confidential information unless you’re comfortable with its policies.</div></section>
+    <section class="toolbar" aria-label="Rewrite settings"><div class="intensity" role="group" aria-label="Rewrite intensity"><span class="toolbar-label">Intensity</span><label><input type="radio" name="intensity" value="light"> <span>Light</span></label><label><input type="radio" name="intensity" value="balanced" checked> <span>Balanced</span></label><label><input type="radio" name="intensity" value="strong"> <span>Strong</span></label></div><p id="intensityHelp" class="intensity-help">Noticeable improvements with conservative restructuring.</p></section>
+    <section class="editor-grid">
+      <article class="panel"><div class="panel-head"><label for="inputText">Original text</label><div class="counts"><span id="inputWords">0 words</span><span id="inputCount">0 characters</span></div></div><textarea id="inputText" maxlength="20000" spellcheck="true" placeholder="Paste or type your text here…" aria-describedby="inputHint"></textarea><div class="panel-foot"><span id="inputHint">Up to 20,000 characters.</span><button id="clearBtn" class="text-button" type="button">Clear</button></div></article>
+      <article class="panel output-panel"><div class="panel-head"><label for="outputText">Rewritten text</label><div class="counts"><span id="outputWords">0 words</span><span id="outputCount">0 characters</span></div></div><textarea id="outputText" readonly placeholder="Your rewritten text will appear here…" aria-live="polite"></textarea><div class="panel-foot"><span id="status" role="status" aria-live="polite">Ready to rewrite.</span><button id="copyBtn" class="text-button" type="button">Copy</button></div></article>
+    </section>
+    <div class="primary-actions"><button id="humanizeBtn" class="primary-button" type="button"><span>✦</span> Rewrite text</button></div>
+    <section id="diffSection" class="diff-section" hidden><div class="diff-head"><strong>Changes</strong><button id="diffToggle" class="text-button" type="button" aria-expanded="false">Show changes</button></div><div id="diffView" class="diff-view" hidden aria-live="polite"></div></section>
+    <section class="disclaimer"><strong>Review before publishing.</strong> AI rewriting can occasionally alter meaning. TextMy does not guarantee AI-detector results; it is designed as a natural-language rewriting and readability tool.</section>
+  </main>
+  <footer class="site-footer"><div class="container footer-inner"><span>TextMy AI Humanizer</span><span>Semantic rewriting · No text storage by this application</span></div></footer>
+  <script>
+    window.TEXTMY_API_URL = "/api";
+    if (typeof location !== "undefined" && location.hostname.endsWith("github.io")) {
+      window.TEXTMY_API_URL = "https://textmy-api.manmicheal214.workers.dev";
+    }
+  </script>
+  <script src="semantic-client.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

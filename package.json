@@ -1,0 +1,22 @@
+{
+  "name": "textmy-ai-humanizer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TextMy AI Humanizer rewrites text for clearer, more natural readability while preserving meaning.",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "echo \"Build complete\""
+  },
+  "dependencies": {
+    "@google/genai": "latest",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
