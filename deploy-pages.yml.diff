@@ -1,0 +1,24 @@
+--- repo/.github/workflows/deploy-pages.yml	2026-09-11 06:10:48.462994669 +0000
++++ fixed/.github/workflows/deploy-pages.yml	2026-09-11 06:14:32.680143070 +0000
+@@ -15,7 +15,21 @@
+   cancel-in-progress: true
+ 
+ jobs:
++  deploy-worker:
++    runs-on: ubuntu-latest
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v4
++
++      - name: Deploy Cloudflare Worker
++        uses: cloudflare/wrangler-action@v3
++        with:
++          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
++          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
++          command: deploy
++
+   deploy:
++    needs: deploy-worker
+     environment:
+       name: github-pages
+       url: ${{ steps.deployment.outputs.page_url }}

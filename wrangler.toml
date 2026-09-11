@@ -1,4 +1,4 @@
-name = "textmy-ai-humanizer"
+name = "textmy-api"
 main = "cloudflare-worker.js"
 compatibility_date = "2024-09-01"
 compatibility_flags = ["nodejs_compat"]
@@ -12,12 +12,12 @@ DEFAULT_PLAN = "free"
 [[d1_databases]]
 binding = "DB"
 database_name = "textmy-db"
-database_id = "your-d1-database-id-here"
+database_id = "febaf7b6-5d55-4eae-b28d-9d7b29246587"
 
 # Cloudflare KV for high-speed rate limiting and temporary caching
 [[kv_namespaces]]
 binding = "KV"
-id = "your-kv-namespace-id-here"
+id = "4fa32c009b5c47a49af00c17be140d2d"
 
 # Optional Cloudflare Workers AI for native vector embeddings
 # [ai]

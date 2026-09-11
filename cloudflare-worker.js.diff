@@ -1,0 +1,29 @@
+--- repo/cloudflare-worker.js	2026-09-11 06:10:48.465212893 +0000
++++ fixed/cloudflare-worker.js	2026-09-11 06:14:23.800045969 +0000
+@@ -578,7 +578,7 @@
+     }
+ 
+     // Usage check endpoint
+-    if (pathname === "/api/usage" && request.method === "GET") {
++    if ((pathname === "/usage" || pathname === "/api/usage") && request.method === "GET") {
+       const usage = await checkD1Usage(userId, env);
+       return new Response(JSON.stringify({ success: true, usage }), {
+         headers: { ...corsHeaders, "Content-Type": "application/json" }
+@@ -586,7 +586,7 @@
+     }
+ 
+     // Analysis Endpoint
+-    if (pathname === "/api/analyze" && request.method === "POST") {
++    if ((pathname === "/analyze" || pathname === "/api/analyze") && request.method === "POST") {
+       try {
+         const body = await request.json().catch(() => ({}));
+         const text = typeof body?.text === "string" ? body.text.trim() : "";
+@@ -677,7 +677,7 @@
+     }
+ 
+     // Humanize & Rewrite Endpoint
+-    if ((pathname === "/api/humanize" || pathname === "/api/rewrite") && request.method === "POST") {
++    if ((pathname === "/humanize" || pathname === "/api/humanize" || pathname === "/rewrite" || pathname === "/api/rewrite") && request.method === "POST") {
+       try {
+         const isRateLimitHit = await checkWorkerRateLimit(clientIp, 30, env);
+         if (isRateLimitHit) {
