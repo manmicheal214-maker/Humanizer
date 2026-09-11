@@ -1,4 +1,4 @@
-name: Deploy frontend to GitHub Pages
+name: Deploy frontend and Cloudflare Worker
 
 on:
   push:
@@ -15,7 +15,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  deploy-worker:
+    name: Deploy Cloudflare Worker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+
   deploy:
+    name: Deploy frontend to GitHub Pages
+    needs: deploy-worker
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
