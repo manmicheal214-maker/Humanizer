@@ -9,6 +9,7 @@ const { buildAnalyzerPrompt } = require("./prompts/analyzer");
 const { buildRewriterPrompt, cleanRewrittenText } = require("./prompts/rewriter");
 const { buildCheckerPrompt } = require("./prompts/checker");
 const { buildCorrectionPrompt } = require("./prompts/correction");
+const { buildDeAiPassPrompt } = require("./prompts/deai-pass");
 const { checkUsageLimit, recordUsage, saveHistory } = require("./storage");
 const CONFIG = require("./config");
 
@@ -207,7 +208,10 @@ async function runHumanizePipeline({
     prompt: rewriterPrompt,
     apiKey,
     model: env.GEMINI_MODEL || CONFIG.DEFAULT_MODEL,
-    temperature: style === "creative" || style === "conversational" ? 0.75 : 0.65,
+    // Higher temperature increases lexical/structural variation, which helps
+    // sentence-rhythm and phrasing diversity — low temperatures produce more
+    // uniform, predictable token choices that read as more "AI-like."
+    temperature: style === "creative" || style === "conversational" ? 0.95 : 0.9,
   });
 
   let rewrittenText = cleanRewrittenText(rewriteResult.text);
@@ -257,6 +261,40 @@ async function runHumanizePipeline({
       qualityReport.score = Math.max(qualityReport.score, 90);
     } catch (corrErr) {
       console.warn("Correction pass failed, using verified rewrite:", corrErr.message);
+    }
+  }
+
+  // 5b. Post-rewrite AI-signal re-check loop.
+  // The initial rewrite prompt is generic; this loop re-runs the SAME
+  // deterministic analysis used on the input, but against the actual
+  // output, and issues targeted correction passes for whatever specific
+  // signals survived. Capped to avoid runaway latency/cost.
+  const MAX_DEAI_PASSES = 2;
+  for (let pass = 0; pass < MAX_DEAI_PASSES; pass++) {
+    const outputDeterministic = analyzeText(rewrittenText);
+    const outputAssessment = synthesizeOverallAssessment(outputDeterministic, null, null);
+
+    if (outputAssessment.aiLikelihood !== "medium" && outputAssessment.aiLikelihood !== "high") {
+      break; // Output no longer trips the deterministic AI-like signals.
+    }
+
+    try {
+      const deAiPrompt = buildDeAiPassPrompt(rewrittenText, { deterministic: outputDeterministic });
+      const deAiRes = await callGemini({
+        prompt: deAiPrompt,
+        apiKey,
+        model: env.GEMINI_MODEL || CONFIG.DEFAULT_MODEL,
+        temperature: 0.9,
+      });
+      const revised = cleanRewrittenText(deAiRes.text);
+      if (revised && revised.length > 0) {
+        rewrittenText = revised;
+      } else {
+        break; // Empty/invalid response — stop rather than looping on garbage.
+      }
+    } catch (deAiErr) {
+      console.warn(`De-AI pass ${pass + 1} failed, keeping prior draft:`, deAiErr.message);
+      break;
     }
   }
 
