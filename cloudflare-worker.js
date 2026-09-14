@@ -738,7 +738,10 @@ ORIGINAL TEXT:
           prompt: rewriterPrompt,
           apiKey: env.GEMINI_API_KEY,
           model: env.GEMINI_MODEL || CONFIG.DEFAULT_MODEL,
-          temperature: 0.65,
+          // Higher temperature increases lexical/structural variation; low
+          // temperatures produce more uniform, predictable token choices
+          // that read as more "AI-like" to statistical detectors.
+          temperature: 0.9,
         });
 
         // Strip prefixes
@@ -758,6 +761,75 @@ ORIGINAL TEXT:
           if (re.test(rewritten)) rewritten = rewritten.replace(re, "").replace(/^[\s:—-]+/, "").trim();
         }
         rewritten = stripMarkdownFences(rewritten);
+
+        // Post-rewrite AI-signal re-check loop. The rewriter prompt above is
+        // generic; this loop re-runs the SAME deterministic analysis used
+        // elsewhere in this file, but against the actual output, and issues
+        // targeted correction passes for whatever specific signals survived.
+        // Capped to avoid runaway latency/cost.
+        const MAX_DEAI_PASSES = 2;
+        for (let pass = 0; pass < MAX_DEAI_PASSES; pass++) {
+          const outputAnalysis = analyzeDeterministic(rewritten);
+          const stdDev = outputAnalysis.burstiness.sentenceLengthStdDev;
+          const repRate = outputAnalysis.repetition.ngrams.repetitionRate;
+          const stockPhrases = outputAnalysis.vocabulary.commonFormulaicPhrases || [];
+          const sentenceCount = outputAnalysis.statistics.sentenceCount;
+
+          let aiScore = 0;
+          if (stdDev < 3.5 && sentenceCount >= 3) aiScore += 2;
+          if (repRate > 0.35) aiScore += 1;
+          if (stockPhrases.length >= 3) aiScore += 2;
+
+          if (aiScore < 2) break; // No longer trips the deterministic AI-like signals.
+
+          const issues = [];
+          if (stdDev < 3.5 && sentenceCount >= 3) {
+            issues.push(`SENTENCE RHYTHM IS STILL TOO UNIFORM (std dev: ${stdDev}). Deliberately mix very short sentences (3-6 words) with longer, more complex ones.`);
+          }
+          if (repRate > 0.35) {
+            issues.push(`PHRASE REPETITION IS STILL ELEVATED (${Math.round(repRate * 100)}%). Reword repeated multi-word phrases so the same construction does not recur.`);
+          }
+          if (stockPhrases.length > 0) {
+            issues.push(`THESE FORMULAIC PHRASES ARE STILL PRESENT: ${stockPhrases.map((p) => `"${p.phrase}"`).join(", ")}. Replace each with a contextual, non-formulaic transition or remove it.`);
+          }
+
+          const deAiPrompt = `You are performing a targeted stylistic pass on a draft that has already been rewritten once. Deterministic analysis of THIS DRAFT (not the original) found it still carries specific AI-like statistical patterns, listed below. Fix ONLY these patterns.
+
+SPECIFIC PATTERNS STILL PRESENT IN THIS DRAFT:
+${issues.map((i) => `- ${i}`).join("\n")}
+
+STRICT RULES:
+- Do NOT change any facts, numbers, names, dates, quotations, URLs, or citations from this draft.
+- Do NOT introduce typos, grammatical errors, or slang to fake imperfection.
+- Do NOT add new claims or remove existing information.
+- Focus changes narrowly on sentence rhythm, phrase repetition, and formulaic transitions — leave everything else as-is.
+- Return ONLY the revised text. No explanations, no meta-commentary.
+
+CURRENT DRAFT:
+"""${rewritten}"""`;
+
+          try {
+            const deAiResult = await callGeminiWorker({
+              prompt: deAiPrompt,
+              apiKey: env.GEMINI_API_KEY,
+              model: env.GEMINI_MODEL || CONFIG.DEFAULT_MODEL,
+              temperature: 0.9,
+            });
+            let revised = deAiResult.text.trim();
+            for (const re of prefixes) {
+              if (re.test(revised)) revised = revised.replace(re, "").replace(/^[\s:—-]+/, "").trim();
+            }
+            revised = stripMarkdownFences(revised);
+            if (revised) {
+              rewritten = revised;
+            } else {
+              break; // Empty/invalid response — stop rather than looping on garbage.
+            }
+          } catch (deAiErr) {
+            console.warn(`De-AI pass ${pass + 1} failed, keeping prior draft:`, deAiErr.message);
+            break;
+          }
+        }
 
         // Quality check
         let qualityReport = { passed: true, score: 95, meaningPreserved: true };
