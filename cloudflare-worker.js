@@ -732,7 +732,8 @@ STRICT PRESERVATION RULES:
 4. Do not invent facts, examples, sources, or evidence.
 5. You should still meaningfully rephrase and restructure sentences — this is a rewrite, not a copy. However, when the original text uses a short, standalone sentence for deliberate emphasis or dramatic effect (e.g. "He attacked." "That was merely the beginning."), keep it short — rephrase its wording if useful, but do not fuse it into a neighboring sentence with a comma or conjunction just to create longer, "smoother" prose.
 6. Vary word choice where it genuinely improves clarity or flow, but avoid swapping a perfectly good word for a fancier synonym with no real reason (e.g. "wicket" -> "dismissal", "attack" -> "onslaught"). If in doubt, prefer the simpler, more natural word.
-7. Return ONLY the rewritten text. Never add a preface, explanation, labels, or meta-commentary.
+8. This must be a genuine rewrite, not light editing. Every sentence except the short, standalone dramatic ones covered by rule 5 must be restructured or reworded — different sentence construction, different phrasing — while keeping the same meaning. A sentence copied with only a punctuation change or a single word swapped is NOT an acceptable rewrite of that sentence and must be redone.
+9. Return ONLY the rewritten text. Never add a preface, explanation, labels, or meta-commentary.
 
 ORIGINAL TEXT:
 """${text}"""`;
