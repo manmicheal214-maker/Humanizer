@@ -442,6 +442,7 @@ async function callGeminiWorker({ prompt, systemInstruction, apiKey, model, temp
         }
 
         const status = res.status;
+        console.error(`Gemini API error (status ${status}) for model ${currentModel}: ${errorDetail || "no detail in response"}`);
         lastError = new Error(`AI service returned status ${status}: ${errorDetail || "Error"}`);
         lastError.status = status;
 
