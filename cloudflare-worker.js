@@ -398,7 +398,6 @@ function isInsideBoldSpan(text, index) {
   const boldMarkers = (beforeText.match(/\*\*/g) || []).length;
   return boldMarkers % 2 === 1;
 }
-__name(isInsideBoldSpan, "isInsideBoldSpan");
 function applyDeterministicHumanization(text) {
   let result = text;
   for (const [pattern, replacement] of CONTRACTION_PATTERNS) {
@@ -437,7 +436,6 @@ function applyDeterministicHumanization(text) {
   result = rebuilt.join(" ");
   return result;
 }
-__name(applyDeterministicHumanization, "applyDeterministicHumanization");
 
 function parseStrictJson(text, fallback = {}) {
   const cleaned = stripMarkdownFences(text);
