@@ -730,8 +730,8 @@ STRICT PRESERVATION RULES:
 2. Preserve exact text inside quotation marks, code fences, inline code, or URLs.
 3. Preserve uncertainty, hedging, qualifications, and the author's position.
 4. Do not invent facts, examples, sources, or evidence.
-5. Do NOT merge short, standalone sentences into longer compound sentences. If the original uses brief, punchy sentences for emphasis or dramatic effect, preserve that rhythm — do not combine them with commas or conjunctions for "better flow."
-6. Do NOT substitute words merely for variety. Only change a word if it improves clarity or fixes an actual awkwardness — gratuitous synonym swapping (e.g., replacing "wicket" with "dismissal," "attack" with "onslaught") makes prose sound more written, not less.
+5. You should still meaningfully rephrase and restructure sentences — this is a rewrite, not a copy. However, when the original text uses a short, standalone sentence for deliberate emphasis or dramatic effect (e.g. "He attacked." "That was merely the beginning."), keep it short — rephrase its wording if useful, but do not fuse it into a neighboring sentence with a comma or conjunction just to create longer, "smoother" prose.
+6. Vary word choice where it genuinely improves clarity or flow, but avoid swapping a perfectly good word for a fancier synonym with no real reason (e.g. "wicket" -> "dismissal", "attack" -> "onslaught"). If in doubt, prefer the simpler, more natural word.
 7. Return ONLY the rewritten text. Never add a preface, explanation, labels, or meta-commentary.
 
 ORIGINAL TEXT:
