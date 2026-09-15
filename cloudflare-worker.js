@@ -363,6 +363,82 @@ function stripMarkdownFences(text) {
   return cleaned;
 }
 
+var SAFE_SYNONYMS = {
+  "important": ["key", "significant", "notable"],
+  "began": ["started"],
+  "difficult": ["tough", "hard"],
+  "quickly": ["fast", "rapidly"],
+  "immediately": ["at once", "right away"],
+  "excellent": ["great", "outstanding"],
+  "eventually": ["in the end"],
+  "significant": ["major", "notable"],
+  "large": ["big"],
+  "remarkable": ["notable", "striking"]
+};
+var CONTRACTION_PATTERNS = [
+  [/\bdo not\b/g, "don't"],
+  [/\bdoes not\b/g, "doesn't"],
+  [/\bdid not\b/g, "didn't"],
+  [/\bcannot\b/g, "can't"],
+  [/\bcan not\b/g, "can't"],
+  [/\bit is\b/g, "it's"],
+  [/\bthat is\b/g, "that's"],
+  [/\bthey are\b/g, "they're"],
+  [/\bwe are\b/g, "we're"],
+  [/\bwill not\b/g, "won't"],
+  [/\bwould not\b/g, "wouldn't"],
+  [/\bshould not\b/g, "shouldn't"],
+  [/\bhas not\b/g, "hasn't"],
+  [/\bhave not\b/g, "haven't"],
+  [/\bis not\b/g, "isn't"],
+  [/\bwere not\b/g, "weren't"]
+];
+function isInsideBoldSpan(text, index) {
+  const beforeText = text.slice(0, index);
+  const boldMarkers = (beforeText.match(/\*\*/g) || []).length;
+  return boldMarkers % 2 === 1;
+}
+__name(isInsideBoldSpan, "isInsideBoldSpan");
+function applyDeterministicHumanization(text) {
+  let result = text;
+  for (const [pattern, replacement] of CONTRACTION_PATTERNS) {
+    result = result.replace(pattern, (match, offset) => {
+      if (isInsideBoldSpan(result, offset)) return match;
+      return Math.random() < 0.5 ? replacement : match;
+    });
+  }
+  for (const [word, alternates] of Object.entries(SAFE_SYNONYMS)) {
+    const re = new RegExp(`\\b${word}\\b`, "gi");
+    result = result.replace(re, (match, offset) => {
+      if (isInsideBoldSpan(result, offset)) return match;
+      if (Math.random() < 0.25) {
+        const choice = alternates[Math.floor(Math.random() * alternates.length)];
+        if (match[0] === match[0].toUpperCase()) {
+          return choice.charAt(0).toUpperCase() + choice.slice(1);
+        }
+        return choice;
+      }
+      return match;
+    });
+  }
+  const sentences = result.split(/(?<=[.!?])\s+/);
+  const rebuilt = sentences.map((sentence) => {
+    const wordCount = (sentence.match(/\S+/g) || []).length;
+    if (wordCount < 25) return sentence;
+    if (sentence.includes("**")) return sentence;
+    if (Math.random() >= 0.2) return sentence;
+    const midMatch = sentence.match(/^(.{20,}?)(,? and | but )(.+)$/i);
+    if (!midMatch) return sentence;
+    const first = midMatch[1];
+    const second = midMatch[3];
+    const capitalizedSecond = second.charAt(0).toUpperCase() + second.slice(1);
+    return `${first.trim()}. ${capitalizedSecond}`;
+  });
+  result = rebuilt.join(" ");
+  return result;
+}
+__name(applyDeterministicHumanization, "applyDeterministicHumanization");
+
 function parseStrictJson(text, fallback = {}) {
   const cleaned = stripMarkdownFences(text);
   try {
@@ -834,6 +910,7 @@ CURRENT DRAFT:
             break;
           }
         }
+        rewritten = applyDeterministicHumanization(rewritten);
 
         // Quality check
         let qualityReport = { passed: true, score: 95, meaningPreserved: true };
