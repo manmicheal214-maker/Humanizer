@@ -860,7 +860,7 @@ REWRITTEN: """${rewritten}"""`;
           ctx.waitUntil(recordD1Usage(userId, text.length, words, rewriteResult.usage.promptTokens, rewriteResult.usage.candidatesTokens, rewriteResult.model, env));
         }
 
-        const deterministic = analyzeDeterministic(text);
+        const deterministic = analyzeDeterministic(rewritten);
 
         return new Response(JSON.stringify({
           success: true,
