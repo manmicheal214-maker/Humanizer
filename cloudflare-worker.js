@@ -399,42 +399,47 @@ function isInsideBoldSpan(text, index) {
   return boldMarkers % 2 === 1;
 }
 function applyDeterministicHumanization(text) {
-  let result = text;
-  for (const [pattern, replacement] of CONTRACTION_PATTERNS) {
-    result = result.replace(pattern, (match, offset) => {
-      if (isInsideBoldSpan(result, offset)) return match;
-      return Math.random() < 0.5 ? replacement : match;
-    });
-  }
-  for (const [word, alternates] of Object.entries(SAFE_SYNONYMS)) {
-    const re = new RegExp(`\\b${word}\\b`, "gi");
-    result = result.replace(re, (match, offset) => {
-      if (isInsideBoldSpan(result, offset)) return match;
-      if (Math.random() < 0.25) {
-        const choice = alternates[Math.floor(Math.random() * alternates.length)];
-        if (match[0] === match[0].toUpperCase()) {
-          return choice.charAt(0).toUpperCase() + choice.slice(1);
+  const paragraphs = text.split(/\n{2,}/);
+  const processedParagraphs = paragraphs.map((paragraph) => {
+    const trimmed = paragraph.trim();
+    if (trimmed.startsWith("#")) return paragraph;
+    let result = paragraph;
+    for (const [pattern, replacement] of CONTRACTION_PATTERNS) {
+      result = result.replace(pattern, (match, offset) => {
+        if (isInsideBoldSpan(result, offset)) return match;
+        return Math.random() < 0.5 ? replacement : match;
+      });
+    }
+    for (const [word, alternates] of Object.entries(SAFE_SYNONYMS)) {
+      const re = new RegExp(`\\b${word}\\b`, "gi");
+      result = result.replace(re, (match, offset) => {
+        if (isInsideBoldSpan(result, offset)) return match;
+        if (Math.random() < 0.25) {
+          const choice = alternates[Math.floor(Math.random() * alternates.length)];
+          if (match[0] === match[0].toUpperCase()) {
+            return choice.charAt(0).toUpperCase() + choice.slice(1);
+          }
+          return choice;
         }
-        return choice;
-      }
-      return match;
+        return match;
+      });
+    }
+    const sentences = result.split(/(?<=[.!?])\s+/);
+    const rebuilt = sentences.map((sentence) => {
+      const wordCount = (sentence.match(/\S+/g) || []).length;
+      if (wordCount < 25) return sentence;
+      if (sentence.includes("**")) return sentence;
+      if (Math.random() >= 0.2) return sentence;
+      const midMatch = sentence.match(/^(.{20,}?)(,? and | but )(.+)$/i);
+      if (!midMatch) return sentence;
+      const first = midMatch[1];
+      const second = midMatch[3];
+      const capitalizedSecond = second.charAt(0).toUpperCase() + second.slice(1);
+      return `${first.trim()}. ${capitalizedSecond}`;
     });
-  }
-  const sentences = result.split(/(?<=[.!?])\s+/);
-  const rebuilt = sentences.map((sentence) => {
-    const wordCount = (sentence.match(/\S+/g) || []).length;
-    if (wordCount < 25) return sentence;
-    if (sentence.includes("**")) return sentence;
-    if (Math.random() >= 0.2) return sentence;
-    const midMatch = sentence.match(/^(.{20,}?)(,? and | but )(.+)$/i);
-    if (!midMatch) return sentence;
-    const first = midMatch[1];
-    const second = midMatch[3];
-    const capitalizedSecond = second.charAt(0).toUpperCase() + second.slice(1);
-    return `${first.trim()}. ${capitalizedSecond}`;
+    return rebuilt.join(" ");
   });
-  result = rebuilt.join(" ");
-  return result;
+  return processedParagraphs.join("\n\n");
 }
 
 function parseStrictJson(text, fallback = {}) {
