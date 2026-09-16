@@ -496,7 +496,12 @@ async function callGeminiWorker({ prompt, systemInstruction, apiKey, model, temp
           const data = await res.json();
           const rawText = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("").trim();
           const usageMetadata = data?.usageMetadata || {};
-          if (!rawText) throw new Error("Empty candidate returned by model.");
+          if (!rawText) {
+            const finishReason = data?.candidates?.[0]?.finishReason || "unknown";
+            const safetyRatings = JSON.stringify(data?.candidates?.[0]?.safetyRatings || data?.promptFeedback || {});
+            console.error(`Gemini returned empty candidate for model ${currentModel}. finishReason: ${finishReason}. safety/promptFeedback: ${safetyRatings}`);
+            throw new Error("Empty candidate returned by model.");
+          }
           return {
             text: rawText,
             model: currentModel,
